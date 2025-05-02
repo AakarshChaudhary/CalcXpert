@@ -21,6 +21,26 @@
     --glass-opacity: 0.15;
     --button-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     --panel-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    
+    /* Mobile optimizations for smoother Samsung M52 performance */
+    --mobile-transition: 0.15s; /* Further reduced for immediate feedback */
+    --mobile-animation-duration: 0.12s; /* Optimized specifically for Samsung M52 refresh rate */
+    --mobile-bezier: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --reduced-motion: 0.1s linear;
+    --android-ripple-duration: 200ms; /* Reduce ripple timing for Samsung devices */
+    --android-touch-feedback: 0.12s;
+    --samsung-touch-response: 0.1s; /* Faster response for smoother interaction */
+  }
+  
+  /* Add prefers-reduced-motion support for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --mobile-transition: 0.05s;
+      --mobile-animation-duration: 0.05s;
+      --glass-blur: 5px;
+      --android-ripple-duration: 100ms;
+      --android-touch-feedback: 0.05s;
+    }
   }
 
   * {
@@ -74,13 +94,25 @@
     position: relative;
   }
 
-  /* Modified animation for better performance on mobile devices */
+  /* Further optimized animation for Samsung M52 and Android devices */
   @keyframes title-float {
     0%, 100% {
       transform: translateY(0);
     }
     50% {
-      transform: translateY(-3px);
+      transform: translateY(-2px);
+    }
+  }
+  
+  /* Prefers-reduced-motion support for accessibility */
+  @media (prefers-reduced-motion) {
+    .calcxpert-title {
+      animation: title-glow 3s infinite;
+    }
+    @keyframes title-float {
+      0%, 100% {
+        transform: none;
+      }
     }
   }
 
@@ -235,9 +267,12 @@
     padding: 4px;
     cursor: pointer;
     position: relative;
-    transition: all 0.3s ease;
+    transition: transform var(--mobile-transition) var(--mobile-bezier), 
+              box-shadow var(--mobile-transition) var(--mobile-bezier);
     box-shadow: var(--button-shadow);
     overflow: hidden;
+    touch-action: manipulation; /* Improve touch response */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on Android */
   }
 
   .theme-toggle::before,
@@ -317,14 +352,14 @@
     background-size: 16px;
   }
 
-  /* Fixed toggle button light mode with better icon alignment to match dark mode */
+  /* Made light mode icon style match the dark mode icon style */
   .light-mode .toggle-circle {
     transform: translateX(24px);
-    left: -3px;
+    left: 0px;
     background-color: #FFD700;
     box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1);
-    /* Optimized sun icon with exact same size and position as moon icon */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23333333' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='4.5'/%3E%3Cpath stroke='%23333333' stroke-width='1.5' stroke-linecap='round' d='M12 2.25v2.5M12 19.25v2.5M2.25 12h2.5M19.25 12h2.5M18.4 5.6l-1.8 1.8M7.4 16.4l-1.8 1.8M5.6 5.6l1.8 1.8M16.4 16.4l1.8 1.8'/%3E%3C/svg%3E");
+    /* Using similar SVG style to the moon icon for consistency */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23333333' viewBox='0 0 24 24'%3E%3Cpath d='M12 10C10.8954 10 10 10.8954 10 12C10 13.1046 10.8954 14 12 14C13.1046 14 14 13.1046 14 12C14 10.8954 13.1046 10 12 10ZM12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12C16 14.2091 14.2091 16 12 16Z'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12 1C12.5523 1 13 1.44772 13 2V4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4V2C11 1.44772 11.4477 1 12 1ZM12 19C12.5523 19 13 19.4477 13 20V22C13 22.5523 12.5523 23 12 23C11.4477 23 11 22.5523 11 22V20C11 19.4477 11.4477 19 12 19ZM1 12C1 11.4477 1.44772 11 2 11H4C4.55228 11 5 11.4477 5 12C5 12.5523 4.55228 13 4 13H2C1.44772 13 1 12.5523 1 12ZM19 12C19 11.4477 19.4477 11 20 11H22C22.5523 11 23 11.4477 23 12C23 12.5523 22.5523 13 22 13H20C19.4477 13 19 12.5523 19 12ZM6.34315 6.34315C6.73367 5.95262 7.36684 5.95262 7.75736 6.34315L9.17157 7.75736C9.5621 8.14788 9.5621 8.78105 9.17157 9.17157C8.78105 9.5621 8.14788 9.5621 7.75736 9.17157L6.34315 7.75736C5.95262 7.36684 5.95262 6.73367 6.34315 6.34315ZM14.8284 14.8284C15.219 14.4379 15.8521 14.4379 16.2426 14.8284L17.6569 16.2426C18.0474 16.6332 18.0474 17.2663 17.6569 17.6569C17.2663 18.0474 16.6332 18.0474 16.2426 17.6569L14.8284 16.2426C14.4379 15.8521 14.4379 15.219 14.8284 14.8284ZM17.6569 6.34315C18.0474 6.73367 18.0474 7.36684 17.6569 7.75736L16.2426 9.17157C15.8521 9.5621 15.219 9.5621 14.8284 9.17157C14.4379 8.78105 14.4379 8.14788 14.8284 7.75736L16.2426 6.34315C16.6332 5.95262 17.2663 5.95262 17.6569 6.34315ZM9.17157 14.8284C9.5621 14.4379 9.5621 15.219 9.17157 15.8284L7.75736 17.2426C7.36684 17.6332 6.73367 17.6332 6.34315 17.2426C5.95262 16.8521 5.95262 16.2189 6.34315 15.8284L7.75736 14.4142C8.14788 14.0237 8.78105 14.4379 9.17157 14.8284Z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: center;
     background-size: 16px;
@@ -660,7 +695,10 @@
   }
 
   .operator-highlight.equals {
-    display: inline;
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    top: -4px;
     margin-left: 4px;
     margin-right: 4px;
     color: var(--blue);
@@ -720,14 +758,19 @@
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.15s var(--mobile-bezier), box-shadow 0.15s var(--mobile-bezier);
     box-shadow: var(--button-shadow);
     backdrop-filter: blur(var(--glass-blur));
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.05);
-    animation: button-glow 2s infinite;
+    animation: button-glow 3s infinite;
     margin: 0;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    will-change: transform, filter; /* GPU acceleration for Samsung M52 */
+    backface-visibility: hidden; /* Prevent flickering during transforms */
+    transform: translateZ(0); /* Force GPU rendering */
   }
 
   @keyframes button-glow {
@@ -890,15 +933,15 @@
     pointer-events: none;
   }
 
-  /* Simplified ripple animation for Android performance */
+  /* Further simplified ripple animation for better Android performance */
 @keyframes ripple {
     0% {
-      opacity: 0.3;
+      opacity: 0.2;
       transform: scale(0.5);
     }
     100% {
       opacity: 0;
-      transform: scale(1.5);
+      transform: scale(1.2);
     }
   }
 
@@ -1083,7 +1126,9 @@
 
   .light-mode .operation.equals {
     background: none;
-    color: var(--blue);
+    color: white;
+    background: linear-gradient(135deg, #42A5F5, var(--blue));
+    
   }
 
   .operation:hover {
@@ -1218,14 +1263,14 @@
     backdrop-filter: blur(var(--glass-blur));
     box-shadow: var(--panel-shadow);
     padding: 1.25rem;
-    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.3s var(--mobile-bezier);
     z-index: 20;
     border-radius: 24px 0 0 24px;
     overflow: hidden;
     border-left: 1px solid rgba(255, 255, 255, 0.1);
     transform: translateX(0);
-    animation: panel-border-glow 2s infinite;
-    will-change: transform, opacity, box-shadow;
+    animation: panel-border-glow 3s infinite;
+    /* only use will-change when panel is shown for better performance */
   }
 
   @keyframes panel-border-glow {
