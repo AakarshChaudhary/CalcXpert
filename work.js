@@ -1,5 +1,18 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // Calculator state
+    // Enable passive event listeners for better touch performance on Android
+    const passiveSupported = false;
+    try {
+      const opts = Object.defineProperty({}, 'passive', {
+        get: function() { passiveSupported = true; return true; }
+      });
+      window.addEventListener("test", null, opts);
+      window.removeEventListener("test", null, opts);
+    } catch(err) {}
+    
+    // Event options for performance optimization
+    const eventOptions = passiveSupported ? { passive: true } : false;
+    
+    // Calculator state with mobile optimization additions for Samsung M52
     const state = {
       displayValue: "0",
       pendingValues: [],
@@ -10,6 +23,10 @@ document.addEventListener("DOMContentLoaded", function () {
       isDarkMode: true,
       history: [],
       showHistory: false,
+      touchActive: false,      // Track touch states for avoiding duplicate events
+      lastFrameTime: 0,        // Track frame timing for smoother animations
+      isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+      isAndroid: /Android/i.test(navigator.userAgent),
     };
   
     // DOM Elements
@@ -38,72 +55,172 @@ document.addEventListener("DOMContentLoaded", function () {
   
     // Initialize function
     function init() {
-      // Add event listeners to number buttons
+      // Add event listeners to number buttons with touch detection optimization for Samsung M52
       numberButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          animateButtonPress(button); // Add animation
-          const number = button.dataset.number;
-          inputDigit(number);
-        });
-      });
-  
-      // Add event listeners to operation buttons
-      operationButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          animateButtonPress(button); // Add animation
-          const operation = button.dataset.operation;
-          inputOperator(operation);
-        });
-      });
-  
-      // Add event listeners to function buttons
-      functionButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          animateButtonPress(button); // Add animation
-          const action = button.dataset.action;
-          switch (action) {
-            case "clear":
-              clearCalculator();
-              break;
-            case "toggle-sign":
-              toggleSign();
-              break;
-            case "percent":
-              percentOperation();
-              break;
-            case "decimal":
-              inputDecimal();
-              break;
-            case "backspace":
-              backspace();
-              break;
-            case "calculate":
-              evaluateExpression();
-              // Add special animation for equals button
-              button.classList.add("equals-pressed");
-              setTimeout(() => {
-                button.classList.remove("equals-pressed");
-              }, 300);
-              break;
-            default:
-              break;
+        // Use requestAnimationFrame for smoother rendering
+        const handleButtonPress = (e) => {
+          // Track touch/click state
+          if (e.type === 'touchstart') {
+            state.touchActive = true;
           }
-        });
+          
+          // Avoid duplicate triggering when both touch and click fire
+          if (e.type === 'click' && state.touchActive) {
+            state.touchActive = false;
+            return;
+          }
+          
+          requestAnimationFrame(() => {
+            animateButtonPress(button);
+            const number = button.dataset.number;
+            inputDigit(number);
+          });
+        };
+        
+        // Add both click and touch events for comprehensive support
+        button.addEventListener("click", handleButtonPress);
+        button.addEventListener("touchstart", handleButtonPress, eventOptions);
       });
   
-      // Theme toggle event listener
-      themeToggle.addEventListener("click", toggleTheme);
+      // Add event listeners to operation buttons with touch optimization
+      operationButtons.forEach((button) => {
+        const handleOperationPress = (e) => {
+          // Track touch/click state to prevent duplicate firing
+          if (e.type === 'touchstart') {
+            state.touchActive = true;
+          }
+          
+          // Avoid duplicate triggering when both touch and click fire
+          if (e.type === 'click' && state.touchActive) {
+            state.touchActive = false;
+            return;
+          }
+          
+          requestAnimationFrame(() => {
+            animateButtonPress(button);
+            const operation = button.dataset.operation;
+            inputOperator(operation);
+          });
+        };
+        
+        button.addEventListener("click", handleOperationPress);
+        button.addEventListener("touchstart", handleOperationPress, eventOptions);
+      });
   
-      // History panel listeners
-      historyToggle.addEventListener("click", toggleHistoryPanel);
-      closeHistory.addEventListener("click", toggleHistoryPanel);
-      clearHistory.addEventListener("click", clearHistoryList);
+      // Add event listeners to function buttons with Samsung M52 touch optimization
+      functionButtons.forEach((button) => {
+        const handleFunctionPress = (e) => {
+          // Track touch/click state
+          if (e.type === 'touchstart') {
+            state.touchActive = true;
+          }
+          
+          // Avoid duplicate triggering when both touch and click fire
+          if (e.type === 'click' && state.touchActive) {
+            state.touchActive = false;
+            return;
+          }
+          
+          requestAnimationFrame(() => {
+            animateButtonPress(button);
+            const action = button.dataset.action;
+            
+            switch (action) {
+              case "clear":
+                clearCalculator();
+                break;
+              case "toggle-sign":
+                toggleSign();
+                break;
+              case "percent":
+                percentOperation();
+                break;
+              case "decimal":
+                inputDecimal();
+                break;
+              case "backspace":
+                backspace();
+                break;
+              case "calculate":
+                evaluateExpression();
+                // Add special animation for equals button
+                button.classList.add("equals-pressed");
+                setTimeout(() => {
+                  button.classList.remove("equals-pressed");
+                }, 300);
+                break;
+              default:
+                break;
+            }
+          });
+        };
+        
+        button.addEventListener("click", handleFunctionPress);
+        button.addEventListener("touchstart", handleFunctionPress, eventOptions);
+      });
+  
+      // Theme toggle event listener with touch optimization
+      const handleThemeToggle = (e) => {
+        if (e.type === 'touchstart') {
+          state.touchActive = true;
+        }
+        
+        if (e.type === 'click' && state.touchActive) {
+          state.touchActive = false;
+          return;
+        }
+        
+        requestAnimationFrame(() => {
+          toggleTheme();
+        });
+      };
+      
+      themeToggle.addEventListener("click", handleThemeToggle);
+      themeToggle.addEventListener("touchstart", handleThemeToggle, eventOptions);
+  
+      // History panel listeners with optimized touch events for Samsung M52
+      const handleHistoryToggle = (e) => {
+        if (e.type === 'touchstart') {
+          state.touchActive = true;
+        }
+        
+        if (e.type === 'click' && state.touchActive) {
+          state.touchActive = false;
+          return;
+        }
+        
+        requestAnimationFrame(() => {
+          toggleHistoryPanel();
+        });
+      };
+      
+      const handleClearHistory = (e) => {
+        if (e.type === 'touchstart') {
+          state.touchActive = true;
+        }
+        
+        if (e.type === 'click' && state.touchActive) {
+          state.touchActive = false;
+          return;
+        }
+        
+        requestAnimationFrame(() => {
+          clearHistoryList();
+        });
+      };
+      
+      historyToggle.addEventListener("click", handleHistoryToggle);
+      historyToggle.addEventListener("touchstart", handleHistoryToggle, eventOptions);
+      closeHistory.addEventListener("click", handleHistoryToggle);
+      closeHistory.addEventListener("touchstart", handleHistoryToggle, eventOptions);
+      clearHistory.addEventListener("click", handleClearHistory);
+      clearHistory.addEventListener("touchstart", handleClearHistory, eventOptions);
   
       // Load history from localStorage if available
       loadHistory();
   
-      // Keyboard support
-      document.addEventListener("keydown", handleKeyboardInput);
+      // Keyboard support with passive option for better performance
+      document.addEventListener("keydown", handleKeyboardInput, eventOptions);
   
       // Initialize display
       updateDisplay();
@@ -155,8 +272,10 @@ document.addEventListener("DOMContentLoaded", function () {
         oldResult.style.width = "100%";
         oldResult.style.textAlign = "right";
   
-        // Add old result to display
+        // Use requestAnimationFrame for smoother animation on mobile
+      requestAnimationFrame(() => {
         document.querySelector(".calculator-display").appendChild(oldResult);
+      });
   
         // Apply fade out animation to old result
         oldResult.style.animation = "fade-out-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards";
@@ -171,17 +290,17 @@ document.addEventListener("DOMContentLoaded", function () {
           // Apply the new-result animation class if this is a calculation result
           if (isCalculationResult) {
             result.classList.add("new-result");
-            
+  
             // Highlight the calculator display
             document.querySelector(".calculator-display").classList.add("highlight-result");
-            
+  
             // Remove classes after animation completes
             setTimeout(() => {
               result.classList.remove("new-result");
               document.querySelector(".calculator-display").classList.remove("highlight-result");
             }, 800);
           }
-          
+  
           result.textContent = newText;
           // Remove old result after animation
           oldResult.remove();
@@ -190,14 +309,22 @@ document.addEventListener("DOMContentLoaded", function () {
         result.textContent = newText;
       }
   
+      // Need to use innerHTML since operator highlights use HTML spans
       expression.innerHTML = state.equationDisplay;
     }
   
-    // Add button press animation
+    // Add button press animation - optimized for smooth Android performance
     function animateButtonPress(button) {
+      // Don't run animations if there was a recent frame - helps reduce lag on rapid taps
+      const now = performance.now();
+      if (now - state.lastFrameTime < 16) { // Skip if less than one frame (~16ms) has passed
+        return;
+      }
+      state.lastFrameTime = now;
+      
       // Check if it's light mode
       const isLightMode = document.body.classList.contains('light-mode');
-      
+  
       // Check if it's an operator, clear, or backspace button to apply special animations
       if (button.classList.contains('operation')) {
         // Apply the specialized operator animation based on theme
@@ -206,8 +333,8 @@ document.addEventListener("DOMContentLoaded", function () {
         } else {
           button.style.animation = "operator-press 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, operator-glow 2s infinite 0.4s";
         }
-        
-        // Create ripple effect for operators
+  
+        // Use a single reusable ripple element to avoid DOM thrashing
         const ripple = document.createElement('div');
         ripple.style.position = 'absolute';
         ripple.style.top = '0';
@@ -222,9 +349,12 @@ document.addEventListener("DOMContentLoaded", function () {
         ripple.style.zIndex = '1';
         ripple.style.pointerEvents = 'none';
         ripple.style.animation = 'ripple 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        
-        button.appendChild(ripple);
-        
+  
+        // Use requestAnimationFrame for smoother animations on Android
+        requestAnimationFrame(() => {
+          button.appendChild(ripple);
+        });
+  
         // Remove ripple element after animation completes
         setTimeout(() => {
           ripple.remove();
@@ -237,8 +367,8 @@ document.addEventListener("DOMContentLoaded", function () {
         } else {
           button.style.animation = "danger-press 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, danger-glow 2s infinite 0.4s";
         }
-        
-        // Create ripple effect for danger buttons
+  
+        // Create ripple effect for danger buttons with better Android performance
         const ripple = document.createElement('div');
         ripple.style.position = 'absolute';
         ripple.style.top = '0';
@@ -253,9 +383,12 @@ document.addEventListener("DOMContentLoaded", function () {
         ripple.style.zIndex = '1';
         ripple.style.pointerEvents = 'none';
         ripple.style.animation = 'ripple 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        
-        button.appendChild(ripple);
-        
+  
+        // Use requestAnimationFrame for smoother animations on Android
+        requestAnimationFrame(() => {
+          button.appendChild(ripple);
+        });
+  
         // Remove ripple element after animation completes
         setTimeout(() => {
           ripple.remove();
@@ -264,7 +397,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } else if (button.classList.contains('equals')) {
         // Special equals button animation
         button.classList.add("equals-pressed");
-        
+  
         // Add an extra shine effect in light mode
         if (isLightMode) {
           const shine = document.createElement('div');
@@ -279,15 +412,18 @@ document.addEventListener("DOMContentLoaded", function () {
           shine.style.zIndex = '1';
           shine.style.pointerEvents = 'none';
           shine.style.animation = 'ripple 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-          
-          button.appendChild(shine);
-          
+  
+          // Avoid button jank on Android with requestAnimationFrame
+          requestAnimationFrame(() => {
+            button.appendChild(shine);
+          });
+  
           // Remove shine element after animation completes
           setTimeout(() => {
             shine.remove();
           }, 800);
         }
-        
+  
         setTimeout(() => {
           button.classList.remove("equals-pressed");
         }, 600);
@@ -296,7 +432,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (isLightMode) {
           // Use the light mode specific animation
           button.classList.add("button-pressed");
-          
+  
           // Add a subtle light effect
           const lightEffect = document.createElement('div');
           lightEffect.style.position = 'absolute';
@@ -310,9 +446,12 @@ document.addEventListener("DOMContentLoaded", function () {
           lightEffect.style.zIndex = '1';
           lightEffect.style.pointerEvents = 'none';
           lightEffect.style.animation = 'ripple 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-          
-          button.appendChild(lightEffect);
-          
+  
+          // Use requestAnimationFrame for smoother rendering on Samsung M52
+          requestAnimationFrame(() => {
+            button.appendChild(lightEffect);
+          });
+  
           // Remove light effect after animation completes
           setTimeout(() => {
             lightEffect.remove();
@@ -429,9 +568,10 @@ document.addEventListener("DOMContentLoaded", function () {
         const fullEquation = buildFullEquation();
   
         try {
-          // Create arrays for calculation using BODMAS rules
-          const values = [...state.pendingValues];
-          const operators = [...state.pendingOperators];
+          // Use direct array references instead of spreads for better performance
+          // on mobile devices without copying large arrays
+          const values = state.pendingValues.slice();
+          const operators = state.pendingOperators.slice();
   
           // First apply multiplication and division (left to right)
           for (let i = 0; i < operators.length; i++) {
@@ -549,13 +689,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   
     // Save history to localStorage
-    function saveHistory() {
-      try {
-        localStorage.setItem("calculatorHistory", JSON.stringify(state.history));
-      } catch (e) {
-        console.error("Could not save history to localStorage:", e);
-      }
-    }
+    // Save calculated history to localStorage with debounce for better mobile performance
+    const saveHistory = (() => {
+      let timeoutId;
+      return () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          try {
+            localStorage.setItem("calculatorHistory", JSON.stringify(state.history));
+          } catch (e) {
+            console.error("Could not save history to localStorage:", e);
+          }
+        }, 300);
+      };
+    })();
   
     // Load history from localStorage
     function loadHistory() {
@@ -570,17 +717,34 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
   
-    // Render history items in the panel with enhanced staggered animations
+    // Render history items in the panel with optimized animations for Samsung M52
     function renderHistoryItems() {
-      // Clear the list
-      historyList.innerHTML = "";
+      // Don't render if we're in the middle of a frame (optimization for Android)
+      const now = performance.now();
+      if (now - state.lastFrameTime < 16) { // Skip if less than one frame has passed
+        requestAnimationFrame(renderHistoryItems);
+        return;
+      }
+      state.lastFrameTime = now;
+      
+      // Clear the list with optimized DOM operation
+      while (historyList.firstChild) {
+        historyList.removeChild(historyList.firstChild);
+      }
   
       // If no history items
       if (state.history.length === 0) {
         const emptyMessage = document.createElement("div");
         emptyMessage.classList.add("empty-history");
         emptyMessage.textContent = "No calculation history yet";
-        emptyMessage.style.animation = "fade-in 0.5s ease-out forwards";
+        
+        // Use simplified animation technique for Android
+        emptyMessage.style.opacity = "0";
+        requestAnimationFrame(() => {
+          emptyMessage.style.opacity = "1";
+          emptyMessage.style.transition = "opacity 0.3s ease";
+        });
+        
         historyList.appendChild(emptyMessage);
         return;
       }
@@ -588,26 +752,35 @@ document.addEventListener("DOMContentLoaded", function () {
       // Create a document fragment for better performance
       const fragment = document.createDocumentFragment();
   
-      // Add each history item with staggered animation delay
+      // Add each history item with optimized animations for Samsung M52
       state.history.forEach((item, index) => {
         const historyItem = document.createElement("div");
         historyItem.classList.add("history-item");
         historyItem.dataset.index = index;
   
-        // Add staggered animation delay for a cascade effect
-        const staggerDelay = index * 0.08;
-        historyItem.style.animationDelay = `${staggerDelay}s`;
-        
-        // Add a subtle slide effect
-        historyItem.style.transform = 'translateX(20px)';
+        // Use lighter animation for Android devices
+        historyItem.style.transform = 'translateX(5px)';  // Reduced distance for smoother animation
         historyItem.style.opacity = '0';
         
-        // Trigger animation after a short delay based on position
-        setTimeout(() => {
-          historyItem.style.transform = 'translateX(0)';
-          historyItem.style.opacity = '1';
-          historyItem.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease';
-        }, 100 + (index * 50));
+        // Use will-change sparingly for GPU acceleration
+        if (index < 5) { // Only apply to visible items for performance
+          historyItem.style.willChange = 'transform, opacity';
+        }
+        
+        // Group animations with requestAnimationFrame for better performance
+        requestAnimationFrame(() => {
+          // Optimize animation timing for buttery smooth performance on Android
+          setTimeout(() => {
+            historyItem.style.transform = 'translateX(0)';
+            historyItem.style.opacity = '1';
+            historyItem.style.transition = `transform ${state.isAndroid ? 0.15 : 0.2}s var(--mobile-bezier), opacity ${state.isAndroid ? 0.15 : 0.2}s var(--mobile-bezier)`;
+            
+            // Remove will-change after animation to free GPU resources
+            setTimeout(() => {
+              historyItem.style.willChange = 'auto';
+            }, 300);
+          }, 20 + (index * 15)); // Reduced stagger time for faster rendering
+        });
   
         const historyContent = document.createElement("div");
         historyContent.classList.add("history-content");
@@ -615,28 +788,28 @@ document.addEventListener("DOMContentLoaded", function () {
         const equation = document.createElement("div");
         equation.classList.add("history-equation");
         equation.innerHTML = item.equation; // Use innerHTML instead of textContent to render the HTML
-        
-        // Add fade in animation to equation with delay
+  
+        // Simplified animation for equation (lighter for mobile)
         equation.style.opacity = '0';
-        equation.style.transform = 'translateY(5px)';
+        equation.style.transform = 'translateY(3px)';
         setTimeout(() => {
           equation.style.opacity = '1';
           equation.style.transform = 'translateY(0)';
-          equation.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        }, 200 + (index * 50));
+          equation.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        }, 100 + (index * 25));
   
         const historyResult = document.createElement("div");
         historyResult.classList.add("history-result");
         historyResult.textContent = item.result;
-        
-        // Add fade in animation to result with longer delay
+  
+        // Simplified animation for result (lighter for mobile)
         historyResult.style.opacity = '0';
-        historyResult.style.transform = 'translateY(5px)';
+        historyResult.style.transform = 'translateY(3px)';
         setTimeout(() => {
           historyResult.style.opacity = '1';
           historyResult.style.transform = 'translateY(0)';
-          historyResult.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        }, 300 + (index * 50));
+          historyResult.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        }, 150 + (index * 25));
   
         historyContent.appendChild(equation);
         historyContent.appendChild(historyResult);
@@ -649,13 +822,13 @@ document.addEventListener("DOMContentLoaded", function () {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         `;
-        
+  
         // Add a subtle hover effect
         deleteBtn.addEventListener('mouseover', () => {
           deleteBtn.style.transform = 'scale(1.1) rotate(90deg)';
           deleteBtn.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
         });
-        
+  
         deleteBtn.addEventListener('mouseout', () => {
           deleteBtn.style.transform = 'scale(1) rotate(0deg)';
         });
@@ -674,7 +847,7 @@ document.addEventListener("DOMContentLoaded", function () {
         historyContent.addEventListener("click", () => {
           // Add visual feedback on click
           historyItem.classList.add('selected');
-          
+  
           // Add a brief transition effect before using the item
           setTimeout(() => {
             useHistoryItem(index);
@@ -697,11 +870,11 @@ document.addEventListener("DOMContentLoaded", function () {
         historyPanel.classList.remove("animate-panel");
         void historyPanel.offsetWidth; // Trigger reflow
         historyPanel.classList.add("animate-panel");
-        
+  
         // Add a subtle background wave animation
         setTimeout(() => {
           historyPanel.classList.add('animated-bg');
-          
+  
           // Remove it after a few seconds
           setTimeout(() => {
             historyPanel.classList.remove('animated-bg');
@@ -777,57 +950,86 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
   
-    // Toggle history panel visibility with enhanced animations
+    // Toggle history panel visibility with optimized animations for Samsung M52
     function toggleHistoryPanel() {
+      // Check frame timing to prevent jank
+      const now = performance.now();
+      if (now - state.lastFrameTime < 16) {
+        requestAnimationFrame(toggleHistoryPanel);
+        return;
+      }
+      state.lastFrameTime = now;
+      
       state.showHistory = !state.showHistory;
       const historyToggle = document.querySelector('.history-toggle');
       const app = document.querySelector('.app-container');
-      
+  
       if (state.showHistory) {
-        // Open the history panel
-        historyPanel.classList.add("show");
-        app.classList.add('show-history');
-        
-        // Add animation classes to history toggle button
-        if (historyToggle) {
-          historyToggle.classList.add('active');
-          historyToggle.classList.remove('closing');
-        }
-        
-        // Render history items
-        renderHistoryItems();
-        
-        // Add staggered animation to history items
-        setTimeout(() => {
-          const historyItems = document.querySelectorAll('.history-item');
-          historyItems.forEach((item, index) => {
-            // Add staggered delay based on item position
-            setTimeout(() => {
-              item.style.animation = 'slide-in 0.4s cubic-bezier(0.25, 1, 0.5, 1), pulse 1s 0.4s, history-item-glow 2s infinite 1.5s';
-            }, index * 50);
-          });
-        }, 300);
-        
-        // Add highlight to header and actions
-        const header = document.querySelector('.history-header');
-        if (header) {
-          header.style.animation = 'header-appear 0.5s forwards';
-        }
-      } else {
-        // Close the history panel
-        historyPanel.classList.remove("show");
-        app.classList.remove('show-history');
-        
-        // Add closing animation to toggle button
-        if (historyToggle) {
-          historyToggle.classList.remove('active');
-          historyToggle.classList.add('closing');
-          
-          // Remove closing class after animation completes
-          setTimeout(() => {
+        // Use requestAnimationFrame for smoother panel opening
+        requestAnimationFrame(() => {
+          // Open the history panel
+          historyPanel.classList.add("show");
+          app.classList.add('show-history');
+    
+          // Add animation classes to history toggle button
+          if (historyToggle) {
+            historyToggle.classList.add('active');
             historyToggle.classList.remove('closing');
-          }, 500);
-        }
+            
+            // Apply GPU acceleration for the animation
+            historyToggle.style.willChange = 'transform';
+            setTimeout(() => {
+              historyToggle.style.willChange = 'auto';
+            }, 300);
+          }
+    
+          // Render history items
+          renderHistoryItems();
+    
+          // Optimized animation for better performance on Android devices
+          setTimeout(() => {
+            const historyItems = document.querySelectorAll('.history-item');
+            // Use requestAnimationFrame for smoother animations
+            requestAnimationFrame(() => {
+              historyItems.forEach((item, index) => {
+                // Simplified animation with reduced properties for better performance
+                if (index < 10) { // Only animate visible items
+                  item.style.animation = state.isAndroid ? 
+                    'slide-in 0.2s ease-out' : 
+                    'slide-in 0.3s ease-out, history-item-glow 2s infinite 1s';
+                }
+              });
+            });
+          }, 100); // Reduced delay
+    
+          // Add highlight to header with optimized animation
+          const header = document.querySelector('.history-header');
+          if (header) {
+            header.style.animation = 'header-appear 0.3s forwards';
+          }
+        });
+      } else {
+        // Use requestAnimationFrame for smoother panel closing
+        requestAnimationFrame(() => {
+          // Close the history panel
+          historyPanel.classList.remove("show");
+          app.classList.remove('show-history');
+    
+          // Add closing animation to toggle button
+          if (historyToggle) {
+            historyToggle.classList.remove('active');
+            historyToggle.classList.add('closing');
+            
+            // Apply GPU acceleration for the animation
+            historyToggle.style.willChange = 'transform';
+            
+            // Remove will-change and closing class after animation completes
+            setTimeout(() => {
+              historyToggle.classList.remove('closing');
+              historyToggle.style.willChange = 'auto';
+            }, 300);
+          }
+        });
       }
     }
   
